@@ -59,12 +59,13 @@
 </template>
 
 <script lang="ts" setup>
-import {ref, watch} from 'vue'
-import {Location, Document, Menu as IconMenu, Setting, Plus, Minus,} from '@element-plus/icons-vue'
+import {ref} from 'vue'
+import {Document, Location, Menu as IconMenu, Minus, Plus, Setting,} from '@element-plus/icons-vue'
 //引入vuex存储
 import {key} from '~/store'
-const store = useStore(key)
 import {useStore} from "vuex";
+
+const store = useStore(key)
 /*侧边栏展开的标识*/
 const value = ref(true);
 /*判断侧边栏是否展开*/

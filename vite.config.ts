@@ -1,7 +1,8 @@
 import path from 'path'
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
-
+// @ts-ignore
+import AutoImport from 'unplugin-auto-import/vite'
 import Components from 'unplugin-vue-components/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 
@@ -30,8 +31,12 @@ export default defineConfig({
       },
     },
   },
+  base: './',
   plugins: [
     vue(),
+    AutoImport({
+      resolvers: [ElementPlusResolver()],
+    }),
     Components({
       // allow auto load markdown components under `./src/components/`
       extensions: ['vue', 'md'],
@@ -63,6 +68,13 @@ export default defineConfig({
     }),
   ],
   server:{
-    host : '0.0.0.0'
+    host : '0.0.0.0',
+    proxy: {
+      '/api': {
+        target: 'http://localhost:81/',	//实际请求地址
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, '')
+      }
+    }
   }
 })

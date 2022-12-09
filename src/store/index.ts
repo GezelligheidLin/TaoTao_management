@@ -1,5 +1,5 @@
 // index.ts
-import {createStore,Store} from 'vuex'
+import {createStore, Store} from 'vuex'
 import {InjectionKey} from 'vue'
 
 export const key: InjectionKey<Store<state>> = Symbol('key')
