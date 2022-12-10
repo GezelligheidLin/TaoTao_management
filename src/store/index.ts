@@ -6,12 +6,16 @@ export const key: InjectionKey<Store<state>> = Symbol('key')
 
 export type state ={
     leftBar:boolean
+    loginPrompt:number
 }
 export default createStore({
     state:{
-        leftBar:true
+        leftBar:true,
+        loginPrompt:0,
     },
     mutations:{
-
+        changeLoginPrompt(state, number) {
+            state.loginPrompt = number
+        }
     }
 })

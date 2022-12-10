@@ -15,6 +15,27 @@ const routes: Array<RouteRecordRaw> = [
         path: "/Principal",
         name: "Principal",
         component: () => import("../components/Principal/Principal.vue"),
+        children:[
+            {
+                path:"",
+                redirect:"/Principal/adminControlPanel"
+            },
+            {
+                path:"adminControlPanel",
+                name:"adminControlPanel",
+                component: () => import("../components/Principal/adminControlPanel.vue")
+            },
+            {
+                path:"merchantControlPanel",
+                name:"merchantControlPanel",
+                component: () => import("../components/Principal/merchantControlPanel.vue")
+            },
+            {
+                path:"userControlPanel",
+                name:"userControlPanel",
+                component: () => import("../components/Principal/userControlPanel.vue")
+            },
+        ]
     }
 ];
 const router = createRouter({

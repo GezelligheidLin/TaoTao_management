@@ -53,30 +53,29 @@
         >Reset</el-button>
       </el-form-item>
     </el-form>
-    <el-button v-if="isPassWord" plain @click="PassWordLogin" style="background: transparent;border: 0;color: #589ef8;font-size: 10px;float: right">Switch to password login</el-button>
-    <el-button v-if="isPassWord===false" plain @click="PassWordLogin" style="background: transparent;border: 0;color: #589ef8;font-size: 10px;float: right">Switch to phone login</el-button>
+    <el-button v-if="isPassWord===false" plain @click="PassWordLogin" style="background: transparent;border: 0;color: #589ef8;font-size: 10px;float: right">Switch to password login</el-button>
+    <el-button v-if="isPassWord" plain @click="PassWordLogin" style="background: transparent;border: 0;color: #589ef8;font-size: 10px;float: right">Switch to code login</el-button>
   </div>
 
 
   <el-dialog v-model="centerDialogVisible" title="注意" width="30%" center :draggable="true">
-    <span>
-      <span v-for="i in 11" :key="i">&emsp;</span>
-      这个手机号尚未注册，是否注册?
+    <span style="text-align: center;display: block">
+      该手机号尚未注册，请联系超级管理员进行注册
     </span>
     <template #footer>
       <span class="dialog-footer">
-        <el-button @click="Register">Register</el-button>
         <el-button type="primary" @click="Cancel">
-          Cancel
+          OK
         </el-button>
       </span>
     </template>
   </el-dialog>
+
 </template>
 
 <script setup lang="ts">
-import {reactive, ref, onBeforeUnmount, onMounted, getCurrentInstance} from 'vue'
-import { ElNotification } from 'element-plus'
+import {getCurrentInstance, onBeforeUnmount, onMounted, reactive, ref} from 'vue'
+import {ElMessage, ElNotification} from 'element-plus'
 /*引入路由*/
 import {useRoute, useRouter} from "vue-router";
 
@@ -88,27 +87,30 @@ const router = useRouter();
 /*引入axios*/
 const currentInstance = getCurrentInstance()
 const {$http}: any = currentInstance?.appContext.config.globalProperties
-
-const adminForm = reactive({phone:'',code:'',password:'',identity:'admin'})
+/*创建admin对象*/
+const adminForm = reactive({phone:'',code:'',password:''})
+/*判断是密码登陆还是手机号登陆的标识*/
 const isPassWord = ref(false);
+/*判断是否点了登陆后有没填的选项标识*/
 const isClickSubmitPhone = ref(false)
 const isClickSubmitCode = ref(false)
 const isClickSubmitPassWord = ref(false)
-
+/*定义倒计时初始值*/
+const count = ref(3);
+/*背景图片设置*/
 const loginBg = ref('url(' + 'https://xingqiu-tuchuang-1256524210.cos.ap-shanghai.myqcloud.com/14753/39578544_p2_master1200.jpg' + ')')
+
+
 onMounted(() => {
   // 添加背景图片
   document.body.style.backgroundSize = '100%';
   document.body.style.backgroundImage = loginBg.value;
 })
-
 onBeforeUnmount(() => {
   // 清除背景图片
   document.body.style.backgroundImage = ''
 })
-
-const i=ref(0);
-
+/*睡眠函数*/
 const sleep = (millisecond:number) => {
   return new Promise<void>(resolve => {
     setTimeout(() => {
@@ -116,7 +118,7 @@ const sleep = (millisecond:number) => {
     }, millisecond)
   })
 }
-
+/*点击使用密码登陆的函数*/
 const PassWordLogin = async () => {
   await sleep(500);
   isPassWord.value = !isPassWord.value;
@@ -124,14 +126,32 @@ const PassWordLogin = async () => {
   isClickSubmitCode.value=false;
   isClickSubmitPassWord.value=false;
 }
-
+/*提示框*/
+const hint = () => {
+  ElMessage({
+    type: 'success',
+    message: '验证通过,'+count.value+'s后进入管理端',
+  })
+  count.value--;
+}
+/*倒计时的实现函数*/
+const timer = ()=> {
+  hint();
+  setInterval(() => {
+    if (count.value > 0) {
+      hint();
+      console.log("count----", count);
+    }
+  }, 1000);
+}
 /*发送验证码事件*/
 const sendCode = () => {
   /*axios发送请求并将手机传给后端获取验证码*/
-  $http.post('http://localhost:8082/admin/code/' , adminForm)
+  $http.get('http://localhost:8082/admin/code/' + adminForm.phone)
       .then((res:any)=>{
         console.log(res)
         if(res.data.success){
+
           ElNotification({
             title: 'Success',
             message: '验证码发送成功',
@@ -146,7 +166,7 @@ const sendCode = () => {
         }
       });
 }
-
+/*点击登陆Login的事件*/
 const submitForm = () => {
   if(!isPassWord.value){
     if (adminForm.phone==='') {
@@ -175,23 +195,26 @@ const submitForm = () => {
       isClickSubmitPassWord.value=false;
     }
   }
-  $http.post('http://localhost:8082/admin/login/', adminForm).then((res: any) => {  //发送axios请求并将登陆对象传递给后端
+  $http.post('http://localhost:8082/admin/login/', adminForm).then(async (res: any) => {  //发送axios请求并将登陆对象传递给后端
     console.log(res)
-    if(res.data.errorMsg==='是否要新建管理员?'){
+    if (res.data.errorMsg === '是否要新建管理员?') {
       centerDialogVisible.value = true;
-    }else{
-      if (res) {
-        sessionStorage.setItem('token', res.data.data)   //将token写入session
+    } else {
+      if (res.data.data) {
+        sessionStorage.setItem('token', res.data.data)//将token写入session
+        console.log(res.data.data)
       }
-      if(res.data.success) {
-        router.push({
+      if (res.data.success) {
+        timer();
+        await sleep(3000);
+        await router.push({
           name: 'Principal'
         });
       }
     }
   })
 }
-
+/*点击重置的事件*/
 const resetForm = async () => {
   await sleep(500);
   isClickSubmitPhone.value = false;
@@ -201,27 +224,15 @@ const resetForm = async () => {
   adminForm.phone = '';
   adminForm.password = '';
 }
-
-const Register = () => {
-  centerDialogVisible.value = false;
-  $http.post('http://localhost:8082/admin/register/', adminForm).then((res: any) => {
-    if (res.data.data.success) {
-      /*创建成功，3秒后跳转*/
-    }
-  })
-}
-
+/*未注册弹窗ok事件*/
 const Cancel = () => {
-  adminForm.password='';
-  adminForm.phone='';
-  adminForm.code='';
   centerDialogVisible.value = false;
 }
-
+/*进入页面自动进行一次刷新事件*/
 const f5 = () => {
-  if(i.value===0) {
-
-    i.value=1;
+  if (location.href.indexOf("#reloaded") == -1) {
+    location.href = location.href + "#reloaded";
+    location.reload();
   }
 }
 f5();
